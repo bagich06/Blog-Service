@@ -7,7 +7,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-var jwtSecret = []byte("your-secret-key") // В продакшене используй переменную окружения
+var jwtSecret = []byte("your-secret-key")
 
 type Claims struct {
 	UserID int    `json:"user_id"`

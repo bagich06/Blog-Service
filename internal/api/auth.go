@@ -62,7 +62,6 @@ func (api *api) LoginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Генерируем JWT токен
 	token, err := auth.GenerateToken(user.ID, user.Phone)
 	if err != nil {
 		http.Error(w, "Error generating token", http.StatusInternalServerError)
