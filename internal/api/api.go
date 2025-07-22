@@ -17,6 +17,8 @@ func New(r *mux.Router, db *repository.PGRepo) *api {
 }
 
 func (api *api) Handle() {
+	api.r.HandleFunc("/api/login", api.LoginHandler)
+	api.r.HandleFunc("/api/register", api.RegisterHandler)
 	api.r.HandleFunc("/api/user/create", api.CreateUser)
 	api.r.HandleFunc("/api/user/get", api.GetUserByID).Queries("id", "{id}")
 	api.r.HandleFunc("/api/user/delete", api.DeleteUser).Queries("id", "{id}")
@@ -25,8 +27,7 @@ func (api *api) Handle() {
 	api.r.HandleFunc("/api/post/get", middleware.AuthMiddleware(api.GetPostById)).Queries("id", "{id}")
 	api.r.HandleFunc("/api/post/get", middleware.AuthMiddleware(api.GetAllPosts))
 	api.r.HandleFunc("/api/post/delete", middleware.AuthMiddleware(api.DeletePostById)).Queries("id", "{id}")
-	api.r.HandleFunc("/api/login", api.LoginHandler)
-	api.r.HandleFunc("/api/register", api.RegisterHandler)
+	api.r.HandleFunc("/api/comment/create", middleware.AuthMiddleware(api.CreateComment)).Queries("post_id", "{post_id}")
 }
 
 func (api *api) ListenAndServe(addr string) error {

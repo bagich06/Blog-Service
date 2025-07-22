@@ -5,12 +5,13 @@ import (
 	"context"
 )
 
-func (repo *PGRepo) CreatePost(post models.Post, userID int) (id int, err error) {
-	err = repo.pool.QueryRow(context.Background(), `INSERT INTO posts(content, user_id) VALUES($1, $2) RETURNING id`, post.Content, userID).Scan(&post.ID)
+func (repo *PGRepo) CreatePost(post models.Post, userID int) (int, error) {
+	var id int
+	err := repo.pool.QueryRow(context.Background(), `INSERT INTO posts(content, user_id) VALUES($1, $2) RETURNING id`, post.Content, userID).Scan(&id)
 	if err != nil {
 		return 0, err
 	}
-	return post.ID, nil
+	return id, nil
 }
 
 func (repo *PGRepo) GetAllPosts(userID int) (posts []models.Post, err error) {
