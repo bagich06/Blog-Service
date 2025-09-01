@@ -24,7 +24,6 @@ func (api *api) CreateComment(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Проверяем rate limit для комментариев
 	ctx := r.Context()
 	err = api.commentLimiter.CheckCommentLimit(ctx, userID, postID)
 	if err != nil {
@@ -39,11 +38,8 @@ func (api *api) CreateComment(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// ВСЕГДА записываем попытку комментирования
 	err = api.commentLimiter.RecordCommentAttempt(ctx, userID, postID)
 	if err != nil {
-		// Логируем ошибку, но продолжаем выполнение
-		// log.Printf("Failed to record comment attempt: %v", err)
 	}
 
 	commentID, err := api.db.CreateComment(comment.Content, userID, postID)
@@ -51,9 +47,6 @@ func (api *api) CreateComment(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-
-	// НЕ сбрасываем счетчик при успехе - он должен накапливаться!
-	// _ = api.commentLimiter.ResetCommentAttempts(ctx, userID, postID)
 
 	comment.ID = commentID
 	comment.UserId = userID
