@@ -104,6 +104,12 @@ go mod download
 CREATE DATABASE blog_db;
 ```
 
+После создания базы данных выполните SQL скрипт для создания таблиц:
+
+```bash
+psql -h localhost -U postgres -d blog_db -f database/schema.sql
+```
+
 ### Настройка Redis:
 
 Убедитесь, что Redis сервер запущен и доступен по адресу `localhost:6379` (по умолчанию).

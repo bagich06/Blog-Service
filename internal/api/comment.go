@@ -39,16 +39,21 @@ func (api *api) CreateComment(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// ВСЕГДА записываем попытку комментирования
+	err = api.commentLimiter.RecordCommentAttempt(ctx, userID, postID)
+	if err != nil {
+		// Логируем ошибку, но продолжаем выполнение
+		// log.Printf("Failed to record comment attempt: %v", err)
+	}
+
 	commentID, err := api.db.CreateComment(comment.Content, userID, postID)
 	if err != nil {
-		// Если создание комментария не удалось, записываем попытку
-		_ = api.commentLimiter.RecordCommentAttempt(ctx, userID, postID)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	// Сбрасываем счетчик попыток при успешном создании
-	_ = api.commentLimiter.ResetCommentAttempts(ctx, userID, postID)
+	// НЕ сбрасываем счетчик при успехе - он должен накапливаться!
+	// _ = api.commentLimiter.ResetCommentAttempts(ctx, userID, postID)
 
 	comment.ID = commentID
 	comment.UserId = userID

@@ -30,12 +30,12 @@ func (repo *PGRepo) GetAllComments(postID int) (comments []models.Comment, err e
 }
 
 func (repo *PGRepo) DeleteComment(commentID int) error {
-	_, err := repo.pool.Exec(context.Background(), `DELETE FROM comments WHERE comment_id = $1`, commentID)
+	_, err := repo.pool.Exec(context.Background(), `DELETE FROM comments WHERE id = $1`, commentID)
 	return err
 }
 
 func (repo *PGRepo) GetCommentByID(commentID int) (comment models.Comment, err error) {
-	err = repo.pool.QueryRow(context.Background(), `SELECT id, content, user_id, comment_id FROM comments WHERE id = $1`, commentID).Scan(&comment.ID, &comment.Content, &comment.UserId, &comment.PostId)
+	err = repo.pool.QueryRow(context.Background(), `SELECT id, content, user_id, post_id FROM comments WHERE id = $1`, commentID).Scan(&comment.ID, &comment.Content, &comment.UserId, &comment.PostId)
 	return comment, err
 }
 
