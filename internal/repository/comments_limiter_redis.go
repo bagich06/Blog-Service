@@ -17,8 +17,7 @@ func NewRedisCommentsLimiter(addrStr string) (*RedisCommentsLimiter, error) {
 		Addr: addrStr,
 	})
 
-	ctx := context.Background()
-	_, err := client.Ping(ctx).Result()
+	_, err := client.Ping(context.Background()).Result()
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to Redis: %w", err)
 	}
@@ -27,30 +26,32 @@ func NewRedisCommentsLimiter(addrStr string) (*RedisCommentsLimiter, error) {
 }
 
 func (l *RedisCommentsLimiter) GetCommentAttempts(ctx context.Context, userID int, postID int) (int, error) {
-	key := fmt.Sprintf("user:%d:post:%d:comment_attempts", userID, postID)
-	res, err := l.client.Get(ctx, key).Result()
+	key := fmt.Sprintf("user:%d:post:%d:comment_attempts", userID, postID) // устанавливаем ключ с id поста и id юзера
+	res, err := l.client.Get(ctx, key).Result()                            // получаем значение из Redis
 	if err == redis.Nil {
-		return 0, nil
+		return 0, nil // если нет ключа значит ретерним 0
 	}
 
 	var attempts int
 	_, err = fmt.Sscanf(res, "%d", &attempts)
 	return attempts, err
+	// записываем в переменную attmepts и возвращаем
 }
 
 func (l *RedisCommentsLimiter) IncrementCommentAttempts(ctx context.Context, userID int, postID int, window time.Duration) (int, error) {
-	key := fmt.Sprintf("user:%d:post:%d:comment_attempts", userID, postID)
+	key := fmt.Sprintf("user:%d:post:%d:comment_attempts", userID, postID) // задаем ключ
 
-	attempts, err := l.client.Incr(ctx, key).Result()
+	attempts, err := l.client.Incr(ctx, key).Result() // инкрементим значение, если ключ не найден устанавливаем 0
 	if err != nil {
 		return 0, err
 	}
 
 	if attempts == 1 {
-		l.client.Expire(ctx, key, window)
+		l.client.Expire(ctx, key, window) // когда была совершена 1ая попытка начинаем отсчет промежутка
 	}
 
 	return int(attempts), nil
+	// возвращаем попытки
 }
 
 func (l *RedisCommentsLimiter) BlockUserComment(ctx context.Context, userID int, postID int, duration time.Duration) error {
@@ -65,9 +66,4 @@ func (l *RedisCommentsLimiter) IsUserBlockedComment(ctx context.Context, userID 
 		return false, err
 	}
 	return exists > 0, nil
-}
-
-func (l *RedisCommentsLimiter) ResetCommentAttempts(ctx context.Context, userID int, postID int) error {
-	key := fmt.Sprintf("user:%d:post:%d:comment_attempts", userID, postID)
-	return l.client.Del(ctx, key).Err()
 }

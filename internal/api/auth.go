@@ -66,14 +66,14 @@ func (api *api) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ctx := r.Context()
-	err = api.loginLimiter.CheckLoginLimit(ctx, user.ID)
+	err = api.loginLimiter.CheckLoginLimit(ctx, user.ID) // проверяем кол-во попыток
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusTooManyRequests)
 		return
 	}
 
 	if user.Password != req.Password {
-		err = api.loginLimiter.RecordFailedLogin(ctx, user.ID)
+		err = api.loginLimiter.RecordFailedLogin(ctx, user.ID) // инкрементим кол-во попыток если пароль не правильный
 		if err != nil {
 			log.Printf("Failed to record failed login: %v", err)
 		}
@@ -82,7 +82,7 @@ func (api *api) LoginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = api.loginLimiter.RecordSuccessfulLogin(ctx, user.ID)
+	err = api.loginLimiter.RecordSuccessfulLogin(ctx, user.ID) // сбрасываем если вход успешен
 	if err != nil {
 		log.Printf("Failed to reset login attempts: %v", err)
 	}

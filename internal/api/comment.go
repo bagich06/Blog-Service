@@ -4,6 +4,7 @@ import (
 	"blog/internal/middleware"
 	"blog/internal/models"
 	"encoding/json"
+	"log"
 	"net/http"
 	"strconv"
 
@@ -25,9 +26,9 @@ func (api *api) CreateComment(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ctx := r.Context()
-	err = api.commentLimiter.CheckCommentLimit(ctx, userID, postID)
+	err = api.commentLimiter.CheckCommentLimit(ctx, userID, postID) // проверяем кол-во попыток
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusTooManyRequests)
+		http.Error(w, err.Error(), http.StatusTooManyRequests) // если превысил кол-в попыток возвращаем ошибку
 		return
 	}
 
@@ -38,8 +39,9 @@ func (api *api) CreateComment(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = api.commentLimiter.RecordCommentAttempt(ctx, userID, postID)
+	err = api.commentLimiter.RecordCommentAttempt(ctx, userID, postID) //  инкрементим кол-во попыток
 	if err != nil {
+		log.Printf("Failed to record comment attempt: %v", err)
 	}
 
 	commentID, err := api.db.CreateComment(comment.Content, userID, postID)

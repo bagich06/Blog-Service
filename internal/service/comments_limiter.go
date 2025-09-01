@@ -9,8 +9,8 @@ import (
 )
 
 type CommentLimiterService struct {
-	redisRepo *repository.RedisCommentsLimiter
-	limits    map[string]*models.CommentLimit
+	redisRepo *repository.RedisCommentsLimiter // для работы с Redis
+	limits    map[string]*models.CommentLimit  // конфигурация лимитов
 }
 
 func NewCommentLimiterService(redisRepo *repository.RedisCommentsLimiter) *CommentLimiterService {
@@ -26,7 +26,7 @@ func NewCommentLimiterService(redisRepo *repository.RedisCommentsLimiter) *Comme
 }
 
 func (s *CommentLimiterService) CheckCommentLimit(ctx context.Context, userID int, postID int) error {
-	blocked, err := s.redisRepo.IsUserBlockedComment(ctx, userID, postID)
+	blocked, err := s.redisRepo.IsUserBlockedComment(ctx, userID, postID) // проверка на заблокированного пользователя
 	if err != nil {
 		return fmt.Errorf("failed to check if user blocked: %w", err)
 	}
@@ -35,14 +35,14 @@ func (s *CommentLimiterService) CheckCommentLimit(ctx context.Context, userID in
 		return fmt.Errorf("user is blocked from commenting on this post due to too many attempts")
 	}
 
-	attempts, err := s.redisRepo.GetCommentAttempts(ctx, userID, postID)
+	attempts, err := s.redisRepo.GetCommentAttempts(ctx, userID, postID) // в переменную attempts записываем кол-во попыток
 	if err != nil {
 		return fmt.Errorf("failed to get comment attempts: %w", err)
 	}
 
-	limit := s.limits["comment"]
-	if attempts >= limit.MaxAttempts {
-		err = s.redisRepo.BlockUserComment(ctx, userID, postID, limit.Window)
+	limit := s.limits["comment"]       // в limit передаем конфиг лимитов
+	if attempts >= limit.MaxAttempts { // проврка на MaxAttmepts
+		err = s.redisRepo.BlockUserComment(ctx, userID, postID, limit.Window) // блокируем если превышено количество повыток
 		if err != nil {
 			return fmt.Errorf("failed to block user: %w", err)
 		}
@@ -54,10 +54,6 @@ func (s *CommentLimiterService) CheckCommentLimit(ctx context.Context, userID in
 
 func (s *CommentLimiterService) RecordCommentAttempt(ctx context.Context, userID int, postID int) error {
 	limit := s.limits["comment"]
-	_, err := s.redisRepo.IncrementCommentAttempts(ctx, userID, postID, limit.Window)
+	_, err := s.redisRepo.IncrementCommentAttempts(ctx, userID, postID, limit.Window) // инкрементим кол-во попыток
 	return err
-}
-
-func (s *CommentLimiterService) ResetCommentAttempts(ctx context.Context, userID int, postID int) error {
-	return s.redisRepo.ResetCommentAttempts(ctx, userID, postID)
 }
