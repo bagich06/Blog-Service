@@ -3,17 +3,26 @@ package api
 import (
 	"blog/internal/middleware"
 	"blog/internal/repository"
-	"github.com/gorilla/mux"
+	"blog/internal/service"
 	"net/http"
+
+	"github.com/gorilla/mux"
 )
 
 type api struct {
-	r  *mux.Router
-	db *repository.PGRepo
+	r              *mux.Router
+	db             *repository.PGRepo
+	loginLimiter   *service.LoginLimiterService
+	commentLimiter *service.CommentLimiterService
 }
 
-func New(r *mux.Router, db *repository.PGRepo) *api {
-	return &api{r: r, db: db}
+func New(r *mux.Router, db *repository.PGRepo, loginLimiter *service.LoginLimiterService, commentLimiter *service.CommentLimiterService) *api {
+	return &api{
+		r:              r,
+		db:             db,
+		loginLimiter:   loginLimiter,
+		commentLimiter: commentLimiter,
+	}
 }
 
 func (api *api) Handle() {

@@ -4,7 +4,9 @@ import (
 	"blog/internal/auth"
 	"blog/internal/models"
 	"encoding/json"
+	"log"
 	"net/http"
+	"strconv"
 )
 
 func (api *api) RegisterHandler(w http.ResponseWriter, r *http.Request) {
@@ -43,6 +45,11 @@ func (api *api) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
+
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"message": "Пользователь успешно зарегистрирован",
+		"user_id": userID,
+	})
 }
 
 func (api *api) LoginHandler(w http.ResponseWriter, r *http.Request) {
@@ -58,9 +65,26 @@ func (api *api) LoginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if user.Password != req.Password {
-		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
+	ctx := r.Context()
+	err = api.loginLimiter.CheckLoginLimit(ctx, user.ID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusTooManyRequests)
 		return
+	}
+
+	if user.Password != req.Password {
+		err = api.loginLimiter.RecordFailedLogin(ctx, user.ID)
+		if err != nil {
+			log.Printf("Failed to record failed login: %v", err)
+		}
+
+		http.Error(w, "Incorrect Password", http.StatusUnauthorized)
+		return
+	}
+
+	err = api.loginLimiter.RecordSuccessfulLogin(ctx, user.ID)
+	if err != nil {
+		log.Printf("Failed to reset login attempts: %v", err)
 	}
 
 	token, err := auth.GenerateToken(user.ID, user.Phone)
@@ -78,4 +102,9 @@ func (api *api) LoginHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
+
+	json.NewEncoder(w).Encode(map[string]string{
+		"message": "Вы успешно вошли в систему",
+		"user_id": strconv.Itoa(user.ID),
+	})
 }
